@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import { body } from "express-validator";
 
 import { validateRequest } from '../middlewares/validate-request';
-import { DatabaseConnectionError } from '../errors/database-connection-error';
+import { NotFoundError } from '../errors/not-found-error';
 import { checkDateFormat, toDateFromYYYYMMDD } from '../util/utils';
 import { Record } from '../models/record';
 
@@ -19,58 +19,55 @@ router.post(
     validateRequest,
     async (req: Request, res: Response) => {
         const { startDate, endDate, minCount, maxCount } = req.body;
-        try {
-            let results = await Record.aggregate([
-                {
-                    $match: {
-                        createdAt: {
-                            $gte: toDateFromYYYYMMDD(startDate), $lte: toDateFromYYYYMMDD(endDate)
-                        }
-                    }
-                },
-                {
-                    $project: {
-                        key: 1,
-                        createdAt: 1,
-                        counts: 1
+        
+        let results = await Record.aggregate([
+            {
+                $match: {
+                    createdAt: {
+                        $gte: toDateFromYYYYMMDD(startDate), $lte: toDateFromYYYYMMDD(endDate)
                     }
                 }
-            ]);
-    
-            let minCountInt = parseInt(minCount);
-            let maxCountInt = parseInt(maxCount);
-            let records: object[] = [];
-            results.forEach((result) => {
-                var totalCount: number = 0;
-                if (result.counts) {
-                    result.counts.forEach((count: number) => {
-                        if (count > minCountInt && count < maxCountInt) {
-                            totalCount += count;
-                        }
-                    });
+            },
+            {
+                $project: {
+                    key: 1,
+                    createdAt: 1,
+                    counts: 1
                 }
-                
-                if (totalCount > 0) {
-                    records.push({
-                        key: result.key,
-                        createdAt: result.createdAt,
-                        totalCount: totalCount
-                    });
-                }
-            });
+            }
+        ]);
+
+        let minCountInt = parseInt(minCount);
+        let maxCountInt = parseInt(maxCount);
+        let records: object[] = [];
+        results.forEach((result) => {
+            var totalCount: number = 0;
+            if (result.counts) {
+                result.counts.forEach((count: number) => {
+                    if (count > minCountInt && count < maxCountInt) {
+                        totalCount += count;
+                    }
+                });
+            }
             
-            res.send({
-                code: '0',
-                msg: 'Success',
-                records: records
-            });
-        } catch(e) {
-            res.send({
-                code: '1',
-                msg: 'error',
-                records: []
-            });
+            if (totalCount > 0) {
+                records.push({
+                    key: result.key,
+                    createdAt: result.createdAt,
+                    totalCount: totalCount
+                });
+            }
+        });
+
+        if (records.length === 0) {
+            throw new NotFoundError();
         }
+        
+        res.send({
+            code: '0',
+            msg: 'Success',
+            records: records
+        });
     }
 )
 

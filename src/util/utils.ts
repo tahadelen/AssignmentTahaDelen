@@ -27,9 +27,7 @@ export const checkDateFormat = (dateString: string) => {
 };
 
 export const toDateFromYYYYMMDD = (dateStr: string) => {
-    console.log(parseInt(dateStr.substring(0, 4)), parseInt(dateStr.substring(5, 7)) - 1 , parseInt(dateStr.substring(8, 10)) + 1);
-    let dateObject = new Date(parseInt(dateStr.substring(0, 4)), parseInt(dateStr.substring(5, 7)) - 1 , parseInt(dateStr.substring(8, 10)) + 1);
-    console.log(dateObject);
+    let dateObject = new Date(parseInt(dateStr.substring(0, 4)), parseInt(dateStr.substring(5, 7)) - 1 , parseInt(dateStr.substring(8, 10)));
     if (isDate(dateObject)) {
         return dateObject;
     }
